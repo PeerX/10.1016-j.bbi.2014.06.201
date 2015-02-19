@@ -1,0 +1,38 @@
+# R code to analyse IL-6 data from Muscatell et al. 2014
+
+# Explorative avayses of IL-6 data reported in the paper (section 3.3)
+# Times are guesses based on the described procedures
+IL6data <- data.frame(IL6mean = c(1.23, 1.22, 1.8, 2.92, 3.64), SD = c(1.01, 0.96, 1.23, 1.56, 3.1), time = c(-55, -35, 50, 80, 110))
+IL6data$SDlower = IL6data$IL6mean - IL6data$SD
+IL6data$SDhigher = IL6data$IL6mean + IL6data$SD
+plot(IL6mean ~ time, data = IL6data, frame.plot = F, ylim = c(0, 7), type = "b", xlab = "Time, min", ylab = "IL-6, pg/ml", main = "Raw data")
+with(IL6data, arrows(time, SDlower, time, SDhigher, length = 0))
+
+IL6data$lnIL6 <- log(IL6data$IL6mean) - 0.5*log((IL6data$SD^2/IL6data$IL6mean^2) + 1)
+IL6data$lnSD <- sqrt(log((IL6data$SD^2/IL6data$IL6mean^2) + 1))
+IL6data$lnLower <- IL6data$lnIL6 - IL6data$lnSD
+IL6data$lnHigher <- IL6data$lnIL6 + IL6data$lnSD
+plot(lnIL6 ~ time, data = IL6data, frame.plot = F, ylim = c(-1, 2), type = "b", xlab = "Time, min", ylab = "ln IL-6, pg/ml", main = "Log-transformed data")
+with(IL6data, arrows(time, lnLower, time, lnHigher, length = 0))
+
+# Analyses of data estimated from figure 2b
+library(RCurl) # To read data from GitHub
+DataURL <- getURL("https://raw.githubusercontent.com/PeerX/10.1016-j.bbi.2014.06.201/master/Fig2Bdata", ssl.verifypeer = FALSE)
+dataFig2 <- read.csv(text = DataURL, header = FALSE)
+names(dataFig2) <- c("Amy", "deltaIl6")
+plot(deltaIl6 ~ Amy, data = dataFig2, frame.plot = F, pch = 19, ylab = "delta log IL-6")
+abline(lm(deltaIl6 ~ Amy, data = dataFig2), col = "red")
+summary(lm(deltaIl6 ~ Amy, data = dataFig2))
+
+boxplot(dataFig2$deltaIl6, frame.plot = F, ylab = "delta log IL-6")
+stripchart(dataFig2$deltaIl6, col = "red", add = T, vertical = T, pch = 1, method = "stack")
+test1 <- t.test(dataFig2$deltaIl6)
+test1
+text(1.3, 1, paste("p = ", round(test1$p.value, 2)))
+
+dataFig2$deltaIL6btf <- exp(dataFig2$deltaIl6)
+boxplot(dataFig2$deltaIL6btf, frame.plot = F, ylab = "delta IL-6")
+stripchart(dataFig2$deltaIL6btf, col = "red", add = T, vertical = T, pch = 1, method = "stack")
+test2 <- t.test(dataFig2$deltaIL6btf)
+test2
+text(1.3, 3, "p < 0.001 ")
